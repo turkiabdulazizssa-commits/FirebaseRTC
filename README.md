@@ -6,3 +6,23 @@ to use Firebase Cloud Firestore for signalling in a WebRTC video chat applicatio
 The solution to this codelab can be seen in the _solution_ branch.
 
 See http://webrtc.org for details.
+async function collectIceCandidates(roomRef, peerConnection,
+                                    localName, remoteName) {
+    const candidatesCollection = roomRef.collection(localName);
+
+    peerConnection.addEventListener('icecandidate', event -> {
+        if (event.candidate) {
+            const json = event.candidate.toJSON();
+            candidatesCollection.add(json);
+        }
+    });
+
+    roomRef.collection(remoteName).onSnapshot(snapshot -> {
+        snapshot.docChanges().forEach(change -> {
+            if (change.type === "added") {
+                const candidate = new RTCIceCandidate(change.doc.data());
+                peerConnection.addIceCandidate(candidate);
+            }
+        });
+    })
+}
